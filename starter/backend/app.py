@@ -28,8 +28,10 @@ def add_order_api():
 
     try:
         order_tracker.add_order(order_id, item_name, quantity, customer_id, status)
-        return jsonify(order_id=order_id), 201
+        return jsonify(order_tracker.get_order_by_id(order_id)), 201
     
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -43,6 +45,7 @@ def get_order_api(order_id):
     else:
         return jsonify({"error": "Order not found"}), 404
 
+@app.route('/api/orders/<string:order_id>', methods=['PUT'])
 @app.route('/api/orders/<string:order_id>/status', methods=['PUT'])
 def update_order_status_api(order_id):
     data = request.get_json()
@@ -56,7 +59,8 @@ def update_order_status_api(order_id):
         return jsonify(order_id=order_id, status=new_status), 200
     
     except ValueError as ve:
-        return jsonify({"error": str(ve)}), 404
+        status_code = 400 if str(ve).startswith("Status must") else 404
+        return jsonify({"error": str(ve)}), status_code
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -69,7 +73,7 @@ def list_orders_api():
         orders = order_tracker.list_orders_by_status(status)
     
     else:
-        orders = order_tracker.list_all_orders()
+        orders = list(order_tracker.list_all_orders().values())
 
     return jsonify(orders), 200
 

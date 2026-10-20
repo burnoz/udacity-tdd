@@ -14,6 +14,9 @@ class OrderTracker:
         self.storage = storage
 
     def add_order(self, order_id: str, item_name: str, quantity: int, customer_id: str, status: str = "pending"):
+        self._validate_order_fields(order_id, item_name, quantity, customer_id)
+        self._validate_status(status)
+
         if self.storage.get_order(order_id):
             raise ValueError(f"Order with ID '{order_id}' already exists.")
 
@@ -31,6 +34,7 @@ class OrderTracker:
         return self.storage.get_order(order_id)
 
     def update_order_status(self, order_id: str, new_status: str):
+        self._validate_status(new_status)
         order = self.storage.get_order(order_id)
         if order:
             order['status'] = new_status
@@ -43,6 +47,19 @@ class OrderTracker:
 
     def list_orders_by_status(self, status: str):
         all_orders = self.storage.get_all_orders()
-        all_orders = all_orders.values()
+        if isinstance(all_orders, dict):
+            all_orders = all_orders.values()
 
         return [order for order in all_orders if order['status'] == status]
+
+    @staticmethod
+    def _validate_order_fields(order_id, item_name, quantity, customer_id):
+        if not order_id or not item_name or not customer_id:
+            raise ValueError("Order ID, item name, and customer ID are required.")
+        if not isinstance(quantity, int) or quantity <= 0:
+            raise ValueError("Quantity must be a positive integer.")
+
+    @staticmethod
+    def _validate_status(status):
+        if status not in {"pending", "processing", "shipped"}:
+            raise ValueError("Status must be pending, processing, or shipped.")
